@@ -1,35 +1,52 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>{% if lid %}Bewerk{% else %}Nieuw{% endif %} lid - Vista Leest</title>
-    <style>
-        body { font-family: sans-serif; padding: 20px; max-width: 500px; }
-        form { display: flex; flex-direction: column; gap: 10px; }
-        input { padding: 8px; }
-        button { padding: 10px; background: #007bff; color: white; border: none; cursor: pointer; }
-        .nav { margin-bottom: 20px; }
-        .nav a { margin-right: 15px; text-decoration: none; color: #007bff; }
-    </style>
-</head>
-<body>
-    <div class="nav">
-        <a href="/dashboard">Dashboard</a>
-        <a href="/leden">Leden</a>
-        <a href="/logout">Logout</a>
+{% extends "base.html" %}
+
+{% block title %}{% if lid %}Bewerk{% else %}Nieuw{% endif %} lid - Vista Leest{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <h1 class="mb-4">{% if lid %}Bewerk lid{% else %}Nieuw lid{% endif %}</h1>
+        
+        <div class="card">
+            <div class="card-body">
+                <form method="post">
+                    <div class="mb-3">
+                        <label for="voornaam" class="form-label">Voornaam</label>
+                        <input type="text" class="form-control" id="voornaam" name="voornaam" value="{{ lid.voornaam if lid else '' }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="achternaam" class="form-label">Achternaam</label>
+                        <input type="text" class="form-control" id="achternaam" name="achternaam" value="{{ lid.achternaam if lid else '' }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" value="{{ lid.email if lid else '' }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="telefoon" class="form-label">Telefoon</label>
+                        <input type="tel" class="form-control" id="telefoon" name="telefoon" value="{{ lid.telefoon if lid else '' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="adres" class="form-label">Adres</label>
+                        <input type="text" class="form-control" id="adres" name="adres" value="{{ lid.adres if lid else '' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="postcode" class="form-label">Postcode</label>
+                        <input type="text" class="form-control" id="postcode" name="postcode" value="{{ lid.postcode if lid else '' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="plaats" class="form-label">Plaats</label>
+                        <input type="text" class="form-control" id="plaats" name="plaats" value="{{ lid.plaats if lid else '' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="lidnummer" class="form-label">Lidnummer</label>
+                        <input type="text" class="form-control" id="lidnummer" name="lidnummer" value="{{ lid.lidnummer if lid else '' }}">
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Opslaan</button>
+                    <a href="/leden" class="btn btn-secondary w-100 mt-2">Annuleren</a>
+                </form>
+            </div>
+        </div>
     </div>
-    
-    <h1>{% if lid %}Bewerk lid{% else %}Nieuw lid{% endif %}</h1>
-    
-    <form method="post">
-        <input type="text" name="voornaam" placeholder="Voornaam" value="{{ lid.voornaam if lid else '' }}" required>
-        <input type="text" name="achternaam" placeholder="Achternaam" value="{{ lid.achternaam if lid else '' }}" required>
-        <input type="email" name="email" placeholder="Email" value="{{ lid.email if lid else '' }}" required>
-        <input type="tel" name="telefoon" placeholder="Telefoon" value="{{ lid.telefoon if lid else '' }}">
-        <input type="text" name="adres" placeholder="Adres" value="{{ lid.adres if lid else '' }}">
-        <input type="text" name="postcode" placeholder="Postcode" value="{{ lid.postcode if lid else '' }}">
-        <input type="text" name="plaats" placeholder="Plaats" value="{{ lid.plaats if lid else '' }}">
-        <input type="text" name="lidnummer" placeholder="Lidnummer" value="{{ lid.lidnummer if lid else '' }}">
-        <button type="submit">Opslaan</button>
-    </form>
-</body>
-</html>
+</div>
+{% endblock %}

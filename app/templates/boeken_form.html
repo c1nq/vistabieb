@@ -1,33 +1,44 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Nieuw boek - Vista Leest</title>
-    <style>
-        body { font-family: sans-serif; padding: 20px; max-width: 500px; }
-        form { display: flex; flex-direction: column; gap: 10px; }
-        input { padding: 8px; }
-        button { padding: 10px; background: #007bff; color: white; border: none; cursor: pointer; }
-        .nav { margin-bottom: 20px; }
-        .nav a { margin-right: 15px; text-decoration: none; color: #007bff; }
-    </style>
-</head>
-<body>
-    <div class="nav">
-        <a href="/dashboard">Dashboard</a>
-        <a href="/boeken">Boeken</a>
-        <a href="/logout">Logout</a>
+{% extends "base.html" %}
+
+{% block title %}Nieuw boek - Vista Leest{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <h1 class="mb-4">{% if boek %}Bewerk boek{% else %}Nieuw boek{% endif %}</h1>
+        
+        <div class="card">
+            <div class="card-body">
+                <form method="post">
+                    <div class="mb-3">
+                        <label for="titel" class="form-label">Titel</label>
+                        <input type="text" class="form-control" id="titel" name="titel" value="{{ boek.titel if boek else '' }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="auteur" class="form-label">Auteur</label>
+                        <input type="text" class="form-control" id="auteur" name="auteur" value="{{ boek.auteur if boek else '' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="isbn" class="form-label">ISBN</label>
+                        <input type="text" class="form-control" id="isbn" name="isbn" value="{{ boek.isbn if boek else '' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="uitgever" class="form-label">Uitgever</label>
+                        <input type="text" class="form-control" id="uitgever" name="uitgever" value="{{ boek.uitgever if boek else '' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="jaar_uitgave" class="form-label">Jaar uitgave</label>
+                        <input type="number" class="form-control" id="jaar_uitgave" name="jaar_uitgave" value="{{ boek.jaar_uitgave if boek else '' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="categorie" class="form-label">Categorie</label>
+                        <input type="text" class="form-control" id="categorie" name="categorie" value="{{ boek.categorie if boek else '' }}">
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Opslaan</button>
+                    <a href="/boeken" class="btn btn-secondary w-100 mt-2">Annuleren</a>
+                </form>
+            </div>
+        </div>
     </div>
-    
-    <h1>Nieuw boek</h1>
-    
-    <form method="post">
-        <input type="text" name="titel" placeholder="Titel" required>
-        <input type="text" name="auteur" placeholder="Auteur">
-        <input type="text" name="isbn" placeholder="ISBN">
-        <input type="text" name="uitgever" placeholder="Uitgever">
-        <input type="number" name="jaar_uitgave" placeholder="Jaar uitgave">
-        <input type="text" name="categorie" placeholder="Categorie">
-        <button type="submit">Opslaan</button>
-    </form>
-</body>
-</html>
+</div>
+{% endblock %}
