@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, jsonify
 from app.models import db, User, Lid, Boek, Exemplaar, Lening
+from datetime import datetime, timedelta
 
 auth = Blueprint('auth', __name__)
 
@@ -91,7 +92,7 @@ def leden_edit(id):
         lid.telefoon = request.form.get('telefoon')
         lid.adres = request.form.get('adres')
         lid.postcode = request.form.get('postcode')
-        lid.plaats = request.form.get('plaats')	
+        lid.plaats = request.form.get('plaats')
         db.session.commit()
         return redirect(url_for('main.leden_list'))
     
@@ -136,6 +137,25 @@ def boeken_add():
     
     return render_template('boeken_form.html')
 
+@main.route('/boeken/<int:id>/edit', methods=['GET', 'POST'])
+def boeken_edit(id):
+    if not check_login():
+        return redirect(url_for('auth.login'))
+    
+    boek = Boek.query.get_or_404(id)
+    
+    if request.method == 'POST':
+        boek.titel = request.form.get('titel')
+        boek.auteur = request.form.get('auteur')
+        boek.isbn = request.form.get('isbn')
+        boek.uitgever = request.form.get('uitgever')
+        boek.jaar_uitgave = request.form.get('jaar_uitgave')
+        boek.categorie = request.form.get('categorie')
+        db.session.commit()
+        return redirect(url_for('main.boeken_list'))
+    
+    return render_template('boeken_form.html', boek=boek)
+
 # LENINGEN
 @main.route('/leningen')
 def leningen_list():
@@ -143,4 +163,43 @@ def leningen_list():
         return redirect(url_for('auth.login'))
     
     leningen = Lening.query.all()
-    return render_template('leningen_list.html', leningen=leningen)
+    return render_template('leningen_list.html', leningen=leningen, now=datetime.now().date())
+
+@main.route('/leningen/new/<int:lid_id>/<int:boek_id>', methods=['POST'])
+def leningen_new(lid_id, boek_id):
+    if not check_login():
+        return redirect(url_for('auth.login'))
+    
+    # Zoek beschikbaar exemplaar
+    exemplaar = Exemplaar.query.filter_by(boek_id=boek_id, status='beschikbaar').first()
+    if not exemplaar:
+        return 'Geen beschikbare exemplaren', 400
+    
+    lid = Lid.query.get_or_404(lid_id)
+    lening = Lening(
+        exemplaar_id=exemplaar.id,
+        lid_id=lid_id,
+        datum_terug_gepland=(datetime.now() + timedelta(days=21)).date()
+    )
+    exemplaar.status = 'uitgeleend'
+    db.session.add(lening)
+    db.session.commit()
+    
+    return redirect(url_for('main.leningen_list'))
+
+@main.route('/leningen/<int:id>/return', methods=['POST'])
+def leningen_return(id):
+    if not check_login():
+        return redirect(url_for('auth.login'))
+    
+    lening = Lening.query.get_or_404(id)
+    lening.exemplaar.status = 'beschikbaar'
+    lening.datum_teruggekeerd = datetime.now()
+    
+    # Boete berekenen
+    if datetime.now().date() > lening.datum_terug_gepland:
+        dagen_te_laat = (datetime.now().date() - lening.datum_terug_gepland).days
+        lening.boete_bedrag = dagen_te_laat * 0.50  # €0.50 per dag
+    
+    db.session.commit()
+    return redirect(url_for('main.leningen_list'))
