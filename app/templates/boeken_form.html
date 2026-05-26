@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Nieuw boek - Vista Leest</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; max-width: 500px; }
+        form { display: flex; flex-direction: column; gap: 10px; }
+        input { padding: 8px; }
+        button { padding: 10px; background: #007bff; color: white; border: none; cursor: pointer; }
+        .nav { margin-bottom: 20px; }
+        .nav a { margin-right: 15px; text-decoration: none; color: #007bff; }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <a href="/dashboard">Dashboard</a>
+        <a href="/boeken">Boeken</a>
+        <a href="/logout">Logout</a>
+    </div>
+    
+    <h1>Nieuw boek</h1>
+    
+    <form method="post">
+        <input type="text" name="titel" placeholder="Titel" required>
+        <input type="text" name="auteur" placeholder="Auteur">
+        <input type="text" name="isbn" placeholder="ISBN">
+        <input type="text" name="uitgever" placeholder="Uitgever">
+        <input type="number" name="jaar_uitgave" placeholder="Jaar uitgave">
+        <input type="text" name="categorie" placeholder="Categorie">
+        <button type="submit">Opslaan</button>
+    </form>
+</body>
+</html>

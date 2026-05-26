@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Leden - Vista Leest</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px; border: 1px solid #ddd; text-align: left; }
+        th { background: #f5f5f5; }
+        .nav { margin-bottom: 20px; }
+        .nav a { margin-right: 15px; text-decoration: none; color: #007bff; }
+        .btn { padding: 8px 15px; background: #007bff; color: white; text-decoration: none; border: none; cursor: pointer; border-radius: 3px; }
+        .btn-danger { background: #dc3545; }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <a href="/dashboard">Dashboard</a>
+        <a href="/leden">Leden</a>
+        <a href="/boeken">Boeken</a>
+        <a href="/leningen">Leningen</a>
+        <a href="/logout">Logout</a>
+    </div>
+    
+    <h1>Leden</h1>
+    <a href="/leden/add" class="btn">+ Nieuw lid</a>
+    
+    <table>
+        <tr>
+            <th>Voornaam</th>
+            <th>Achternaam</th>
+            <th>Email</th>
+            <th>Telefoon</th>
+            <th>Acties</th>
+        </tr>
+        {% for lid in leden %}
+        <tr>
+            <td>{{ lid.voornaam }}</td>
+            <td>{{ lid.achternaam }}</td>
+            <td>{{ lid.email }}</td>
+            <td>{{ lid.telefoon }}</td>
+            <td>
+                <a href="/leden/{{ lid.id }}/edit">Bewerk</a>
+                <form method="post" action="/leden/{{ lid.id }}/delete" style="display:inline;">
+                    <button type="submit" class="btn btn-danger" onclick="return confirm('Zeker?')">Verwijder</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>

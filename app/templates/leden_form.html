@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{% if lid %}Bewerk{% else %}Nieuw{% endif %} lid - Vista Leest</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; max-width: 500px; }
+        form { display: flex; flex-direction: column; gap: 10px; }
+        input { padding: 8px; }
+        button { padding: 10px; background: #007bff; color: white; border: none; cursor: pointer; }
+        .nav { margin-bottom: 20px; }
+        .nav a { margin-right: 15px; text-decoration: none; color: #007bff; }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <a href="/dashboard">Dashboard</a>
+        <a href="/leden">Leden</a>
+        <a href="/logout">Logout</a>
+    </div>
+    
+    <h1>{% if lid %}Bewerk lid{% else %}Nieuw lid{% endif %}</h1>
+    
+    <form method="post">
+        <input type="text" name="voornaam" placeholder="Voornaam" value="{{ lid.voornaam if lid else '' }}" required>
+        <input type="text" name="achternaam" placeholder="Achternaam" value="{{ lid.achternaam if lid else '' }}" required>
+        <input type="email" name="email" placeholder="Email" value="{{ lid.email if lid else '' }}" required>
+        <input type="tel" name="telefoon" placeholder="Telefoon" value="{{ lid.telefoon if lid else '' }}">
+        <input type="text" name="adres" placeholder="Adres" value="{{ lid.adres if lid else '' }}">
+        <input type="text" name="postcode" placeholder="Postcode" value="{{ lid.postcode if lid else '' }}">
+        <input type="text" name="plaats" placeholder="Plaats" value="{{ lid.plaats if lid else '' }}">
+        <input type="text" name="lidnummer" placeholder="Lidnummer" value="{{ lid.lidnummer if lid else '' }}">
+        <button type="submit">Opslaan</button>
+    </form>
+</body>
+</html>
