@@ -16,7 +16,7 @@ def login():
             session['user_id'] = user.id
             session['role'] = user.role
             return redirect(url_for('main.dashboard'))
-        return render_template('login.html', error='Invalid credentials')
+        return render_template('login.html', error='Ongeldige gebruikersnaam of wachtwoord')
     
     return render_template('login.html')
 
