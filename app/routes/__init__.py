@@ -7,9 +7,9 @@ auth = Blueprint('auth', __name__)
 @auth.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form.get('username')
+        leerlingnummer = request.form.get('leerlingnummer')
         password = request.form.get('password')
-        user = User.query.filter_by(username=username).first()
+        user = User.query.filter_by(leerlingnummer=leerlingnummer).first()
         
         if user and user.check_password(password):
             session['user_id'] = user.id
