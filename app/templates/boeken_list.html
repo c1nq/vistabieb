@@ -28,6 +28,7 @@
                 <td><span class="badge bg-info">{{ boek.categorie }}</span></td>
                 <td>
                     <a href="/boeken/{{ boek.id }}/edit" class="btn btn-sm btn-primary">Bewerk</a>
+                    <a href="/reserveringen/new/{{ boek.id }}" class="btn btn-sm btn-info">Reserveer</a>
                 </td>
             </tr>
             {% endfor %}

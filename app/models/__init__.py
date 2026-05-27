@@ -65,3 +65,14 @@ class Lening(db.Model):
     datum_teruggekeerd = db.Column(db.DateTime)
     boete_bedrag = db.Column(db.Numeric(6, 2), default=0)
     betaald = db.Column(db.Boolean, default=False)
+
+class Reservering(db.Model):
+    __tablename__ = 'reserveringen'
+    id = db.Column(db.Integer, primary_key=True)
+    lid_id = db.Column(db.Integer, db.ForeignKey('leden.id'), nullable=False)
+    boek_id = db.Column(db.Integer, db.ForeignKey('boeken.id'), nullable=False)
+    datum_gereserveerd = db.Column(db.DateTime, default=datetime.utcnow)
+    status = db.Column(db.String(20), default='actief')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    lid = db.relationship('Lid', backref='reserveringen')
+    boek = db.relationship('Boek', backref='reserveringen')

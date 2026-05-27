@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Reserveringen - Vista Leest{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Reserveringen</h1>
+
+<h3 class="mt-4 mb-3">Actieve reserveringen</h3>
+<div class="table-responsive">
+    <table class="table table-striped table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>Lid</th>
+                <th>Boek</th>
+                <th>Gereserveerd op</th>
+                <th>Status</th>
+                <th>Acties</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for reservering in reserveringen %}
+            {% if reservering.status == 'actief' %}
+            <tr>
+                <td>{{ reservering.lid.voornaam }} {{ reservering.lid.achternaam }}</td>
+                <td>{{ reservering.boek.titel }}</td>
+                <td>{{ reservering.datum_gereserveerd.strftime('%d-%m-%Y') }}</td>
+                <td><span class="status-actief">ACTIEF</span></td>
+                <td>
+                    <form method="post" action="/reserveringen/{{ reservering.id }}/cancel" style="display:inline;">
+                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Reservering annuleren?')">Annuleren</button>
+                    </form>
+                </td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<h3 class="mt-5 mb-3">Overige reserveringen</h3>
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead class="table-dark">
+            <tr>
+                <th>Lid</th>
+                <th>Boek</th>
+                <th>Datum</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for reservering in reserveringen %}
+            {% if reservering.status != 'actief' %}
+            <tr>
+                <td>{{ reservering.lid.voornaam }} {{ reservering.lid.achternaam }}</td>
+                <td>{{ reservering.boek.titel }}</td>
+                <td>{{ reservering.datum_gereserveerd.strftime('%d-%m-%Y') }}</td>
+                <td><span class="badge bg-secondary">{{ reservering.status|upper }}</span></td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

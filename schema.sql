@@ -59,3 +59,17 @@ betaald BOOLEAN DEFAULT FALSE
 CREATE INDEX idx_leningen_lid ON leningen(lid_id);
 CREATE INDEX idx_leningen_exemplaar ON leningen(exemplaar_id);
 CREATE INDEX idx_leningen_status ON leningen(datum_teruggekeerd);
+
+-- Reserveringen
+CREATE TABLE reserveringen (
+    id SERIAL PRIMARY KEY,
+    lid_id INT REFERENCES leden(id) ON DELETE CASCADE,
+    boek_id INT REFERENCES boeken(id) ON DELETE CASCADE,
+    datum_gereserveerd TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    status VARCHAR(20) DEFAULT 'actief',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_reserveringen_lid ON reserveringen(lid_id);
+CREATE INDEX idx_reserveringen_boek ON reserveringen(boek_id);
+CREATE INDEX idx_reserveringen_status ON reserveringen(status);

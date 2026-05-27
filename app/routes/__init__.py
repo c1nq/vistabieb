@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, jsonify
-from app.models import db, User, Lid, Boek, Exemplaar, Lening
+from app.models import db, User, Lid, Boek, Exemplaar, Lening, Reservering
 from datetime import datetime, timedelta
 
 auth = Blueprint('auth', __name__)
@@ -191,15 +191,64 @@ def leningen_new(lid_id, boek_id):
 def leningen_return(id):
     if not check_login():
         return redirect(url_for('auth.login'))
-    
+
     lening = Lening.query.get_or_404(id)
     lening.exemplaar.status = 'beschikbaar'
     lening.datum_teruggekeerd = datetime.now()
-    
+
     # Boete berekenen
     if datetime.now().date() > lening.datum_terug_gepland:
         dagen_te_laat = (datetime.now().date() - lening.datum_terug_gepland).days
         lening.boete_bedrag = dagen_te_laat * 0.50  # €0.50 per dag
-    
+
     db.session.commit()
     return redirect(url_for('main.leningen_list'))
+
+# RESERVERINGEN
+@main.route('/reserveringen')
+def reserveringen_list():
+    if not check_login():
+        return redirect(url_for('auth.login'))
+
+    reserveringen = Reservering.query.all()
+    return render_template('reserveringen_list.html', reserveringen=reserveringen)
+
+@main.route('/reserveringen/new/<int:boek_id>', methods=['GET', 'POST'])
+def reserveringen_new(boek_id):
+    if not check_login():
+        return redirect(url_for('auth.login'))
+
+    boek = Boek.query.get_or_404(boek_id)
+    leden = Lid.query.all()
+
+    if request.method == 'POST':
+        lid_id = request.form.get('lid_id')
+
+        # Check for duplicate actief reservation
+        existing = Reservering.query.filter_by(
+            lid_id=lid_id,
+            boek_id=boek_id,
+            status='actief'
+        ).first()
+        if existing:
+            return render_template('reserveringen_form.html',
+                                 boek=boek,
+                                 leden=leden,
+                                 error='Dit lid heeft al een actieve reservering voor dit boek')
+
+        reservering = Reservering(lid_id=lid_id, boek_id=boek_id)
+        db.session.add(reservering)
+        db.session.commit()
+        return redirect(url_for('main.reserveringen_list'))
+
+    return render_template('reserveringen_form.html', boek=boek, leden=leden)
+
+@main.route('/reserveringen/<int:id>/cancel', methods=['POST'])
+def reserveringen_cancel(id):
+    if not check_login():
+        return redirect(url_for('auth.login'))
+
+    reservering = Reservering.query.get_or_404(id)
+    reservering.status = 'geannuleerd'
+    db.session.commit()
+    return redirect(url_for('main.reserveringen_list'))
