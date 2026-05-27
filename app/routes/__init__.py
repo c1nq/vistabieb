@@ -53,9 +53,18 @@ def dashboard():
 def leden_list():
     if not check_login():
         return redirect(url_for('auth.login'))
-    
-    leden = Lid.query.all()
-    return render_template('leden_list.html', leden=leden)
+
+    q = request.args.get('q', '').strip()
+    query = Lid.query
+    if q:
+        query = query.filter(db.or_(
+            Lid.voornaam.ilike(f'%{q}%'),
+            Lid.achternaam.ilike(f'%{q}%'),
+            Lid.email.ilike(f'%{q}%'),
+            Lid.lidnummer.ilike(f'%{q}%')
+        ))
+    leden = query.all()
+    return render_template('leden_list.html', leden=leden, q=q)
 
 @main.route('/leden/add', methods=['GET', 'POST'])
 def leden_add():
@@ -114,9 +123,18 @@ def leden_delete(id):
 def boeken_list():
     if not check_login():
         return redirect(url_for('auth.login'))
-    
-    boeken = Boek.query.all()
-    return render_template('boeken_list.html', boeken=boeken)
+
+    q = request.args.get('q', '').strip()
+    query = Boek.query
+    if q:
+        query = query.filter(db.or_(
+            Boek.titel.ilike(f'%{q}%'),
+            Boek.auteur.ilike(f'%{q}%'),
+            Boek.isbn.ilike(f'%{q}%'),
+            Boek.categorie.ilike(f'%{q}%')
+        ))
+    boeken = query.all()
+    return render_template('boeken_list.html', boeken=boeken, q=q)
 
 @main.route('/boeken/add', methods=['GET', 'POST'])
 def boeken_add():
@@ -162,9 +180,15 @@ def boeken_edit(id):
 def leningen_list():
     if not check_login():
         return redirect(url_for('auth.login'))
-    
-    leningen = Lening.query.all()
-    return render_template('leningen_list.html', leningen=leningen, now=datetime.now().date())
+
+    status = request.args.get('status', '').strip()
+    query = Lening.query
+    if status == 'actief':
+        query = query.filter(Lening.datum_teruggekeerd == None)
+    elif status == 'ingeleverd':
+        query = query.filter(Lening.datum_teruggekeerd != None)
+    leningen = query.all()
+    return render_template('leningen_list.html', leningen=leningen, now=datetime.now().date(), status=status)
 
 @main.route('/leningen/new/<int:lid_id>/<int:boek_id>', methods=['POST'])
 def leningen_new(lid_id, boek_id):
