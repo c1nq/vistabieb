@@ -1,22 +1,85 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Vista Leest - Login</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vista Leest - Inloggen</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/vistabieb.css') }}">
     <style>
-        body { font-family: sans-serif; max-width: 400px; margin: 100px auto; }
-        form { display: flex; flex-direction: column; gap: 10px; }
-        input { padding: 8px; }
-        button { padding: 10px; background: #007bff; color: white; border: none; cursor: pointer; }
-        .error { color: red; }
+        body {
+            background: linear-gradient(135deg, #003D7A 0%, #002a54 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 0;
+        }
+        .login-container {
+            max-width: 400px;
+            width: 100%;
+        }
+        .login-card {
+            border: none;
+            border-radius: 8px;
+            box-shadow: 0 8px 24px rgba(0, 61, 122, 0.3);
+        }
+        .login-card .card-body {
+            padding: 2rem;
+        }
+        .login-card h1 {
+            color: #003D7A;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            font-size: 1.8rem;
+        }
+        .login-card .form-control {
+            margin-bottom: 1rem;
+            padding: 0.6rem 0.9rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .login-card .form-control:focus {
+            border-color: #003D7A;
+            box-shadow: 0 0 0 0.2rem rgba(0, 61, 122, 0.25);
+        }
+        .login-card .btn-primary {
+            width: 100%;
+            padding: 0.7rem;
+            font-weight: 600;
+            margin-top: 0.5rem;
+            background-color: #003D7A;
+            border-color: #003D7A;
+        }
+        .login-card .btn-primary:hover {
+            background-color: #002a54;
+            border-color: #002a54;
+        }
+        .alert {
+            margin-bottom: 1rem;
+        }
     </style>
 </head>
 <body>
-    <h1>Vista Leest Bibliotheek</h1>
-    {% if error %}<p class="error">{{ error }}</p>{% endif %}
-    <form method="post">
-        <input type="text" name="leerlingnummer" placeholder="Leerlingnummer" required>
-        <input type="password" name="password" placeholder="Wachtwoord" required>
-        <button type="submit">Login</button>
-    </form>
+    <div class="login-container">
+        <div class="card login-card">
+            <div class="card-body">
+                <h1>📚 Vista Leest</h1>
+                {% if error %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endif %}
+                <form method="post">
+                    <div class="mb-3">
+                        <input type="text" name="leerlingnummer" class="form-control" placeholder="Leerlingnummer" required autofocus>
+                    </div>
+                    <div class="mb-3">
+                        <input type="password" name="password" class="form-control" placeholder="Wachtwoord" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Inloggen</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
