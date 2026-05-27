@@ -76,3 +76,13 @@ class Reservering(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     lid = db.relationship('Lid', backref='reserveringen')
     boek = db.relationship('Boek', backref='reserveringen')
+
+class Herinnering(db.Model):
+    __tablename__ = 'herinneringen'
+    id = db.Column(db.Integer, primary_key=True)
+    lening_id = db.Column(db.Integer, db.ForeignKey('leningen.id', ondelete='CASCADE'), nullable=False)
+    type = db.Column(db.Integer, nullable=False)
+    datum_verzonden = db.Column(db.DateTime, default=datetime.utcnow)
+    sent = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    lening = db.relationship('Lening', backref='herinneringen')

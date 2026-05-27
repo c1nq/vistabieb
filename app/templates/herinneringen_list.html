@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Herinneringen - Vista Leest{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Herinneringen</h1>
+    <form method="post" action="/herinneringen/stuur" style="display:inline;">
+        <button type="submit" class="btn btn-primary">Stuur herinneringen nu</button>
+    </form>
+</div>
+
+{% if result_count > 0 %}
+<div class="alert alert-success" role="alert">
+    ✓ <strong>{{ result_count }}</strong> herinneringen verstuurd
+</div>
+{% endif %}
+
+<h3 class="mt-4 mb-3">Verzonden herinneringen</h3>
+<div class="table-responsive">
+    <table class="table table-striped table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>Lid</th>
+                <th>Boek</th>
+                <th>Type</th>
+                <th>Datum verzonden</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if herinneringen %}
+                {% for herinnering in herinneringen %}
+                <tr>
+                    <td>{{ herinnering.lening.lid.voornaam }} {{ herinnering.lening.lid.achternaam }}</td>
+                    <td>{{ herinnering.lening.exemplaar.boek.titel if herinnering.lening.exemplaar else 'N/A' }}</td>
+                    <td>
+                        {% if herinnering.type == 1 %}
+                            <span class="badge bg-info">3 dagen voor</span>
+                        {% elif herinnering.type == 2 %}
+                            <span class="badge bg-warning">Op deadline</span>
+                        {% elif herinnering.type == 3 %}
+                            <span class="badge bg-danger">7 dagen na deadline</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ herinnering.datum_verzonden.strftime('%d-%m-%Y %H:%M') }}</td>
+                    <td>
+                        {% if herinnering.sent %}
+                            <span class="badge bg-success">Verstuurd</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Wacht</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted">Geen herinneringen verstuurd</td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

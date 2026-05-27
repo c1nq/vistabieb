@@ -73,3 +73,16 @@ CREATE TABLE reserveringen (
 CREATE INDEX idx_reserveringen_lid ON reserveringen(lid_id);
 CREATE INDEX idx_reserveringen_boek ON reserveringen(boek_id);
 CREATE INDEX idx_reserveringen_status ON reserveringen(status);
+
+-- Herinneringen
+CREATE TABLE herinneringen (
+    id SERIAL PRIMARY KEY,
+    lening_id INT REFERENCES leningen(id) ON DELETE CASCADE,
+    type INT NOT NULL,
+    datum_verzonden TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    sent BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_herinneringen_lening ON herinneringen(lening_id);
+CREATE INDEX idx_herinneringen_type ON herinneringen(lening_id, type);

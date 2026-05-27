@@ -1,5 +1,6 @@
-from flask import Blueprint, render_template, request, redirect, url_for, session, jsonify
-from app.models import db, User, Lid, Boek, Exemplaar, Lening, Reservering
+from flask import Blueprint, render_template, request, redirect, url_for, session, jsonify, current_app
+from app.models import db, User, Lid, Boek, Exemplaar, Lening, Reservering, Herinnering
+from app.mail import stuur_herinneringen
 from datetime import datetime, timedelta
 
 auth = Blueprint('auth', __name__)
@@ -337,3 +338,22 @@ def api_leningen_return():
     db.session.commit()
 
     return jsonify({'success': True, 'boete': float(boete)})
+
+# HERINNERINGEN
+@main.route('/herinneringen')
+def herinneringen_list():
+    if not check_login():
+        return redirect(url_for('auth.login'))
+
+    herinneringen = Herinnering.query.all()
+    result_count = request.args.get('result', 0, type=int)
+
+    return render_template('herinneringen_list.html', herinneringen=herinneringen, result_count=result_count)
+
+@main.route('/herinneringen/stuur', methods=['POST'])
+def herinneringen_stuur():
+    if not check_login():
+        return redirect(url_for('auth.login'))
+
+    result = stuur_herinneringen(current_app._get_current_object())
+    return redirect(url_for('main.herinneringen_list', result=result['sent']))
