@@ -252,3 +252,88 @@ def reserveringen_cancel(id):
     reservering.status = 'geannuleerd'
     db.session.commit()
     return redirect(url_for('main.reserveringen_list'))
+
+# BARCODE SCANNER
+@main.route('/barcode-scanner')
+def barcode_scanner():
+    if not check_login():
+        return redirect(url_for('auth.login'))
+
+    leden = Lid.query.all()
+    return render_template('barcode_scanner.html', leden=leden)
+
+@main.route('/api/exemplaar/<barcode>')
+def api_exemplaar_lookup(barcode):
+    if not check_login():
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    exemplaar = Exemplaar.query.filter_by(barcode=barcode).first()
+    if not exemplaar:
+        return jsonify({'found': False})
+
+    lening_id = None
+    if exemplaar.status == 'uitgeleend':
+        active_lening = Lening.query.filter_by(
+            exemplaar_id=exemplaar.id,
+            datum_teruggekeerd=None
+        ).first()
+        if active_lening:
+            lening_id = active_lening.id
+
+    return jsonify({
+        'found': True,
+        'exemplaar_id': exemplaar.id,
+        'status': exemplaar.status,
+        'boek': {
+            'titel': exemplaar.boek.titel,
+            'auteur': exemplaar.boek.auteur,
+            'isbn': exemplaar.boek.isbn
+        },
+        'lening_id': lening_id
+    })
+
+@main.route('/api/leningen/checkout', methods=['POST'])
+def api_leningen_checkout():
+    if not check_login():
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 401
+
+    data = request.get_json()
+    exemplaar_id = data.get('exemplaar_id')
+    lid_id = data.get('lid_id')
+
+    exemplaar = Exemplaar.query.get_or_404(exemplaar_id)
+    if exemplaar.status != 'beschikbaar':
+        return jsonify({'success': False, 'error': 'Exemplaar is niet beschikbaar'})
+
+    lening = Lening(
+        exemplaar_id=exemplaar_id,
+        lid_id=lid_id,
+        datum_terug_gepland=(datetime.now() + timedelta(days=21)).date()
+    )
+    exemplaar.status = 'uitgeleend'
+    db.session.add(lening)
+    db.session.commit()
+
+    return jsonify({'success': True, 'lening_id': lening.id})
+
+@main.route('/api/leningen/return', methods=['POST'])
+def api_leningen_return():
+    if not check_login():
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 401
+
+    data = request.get_json()
+    lening_id = data.get('lening_id')
+
+    lening = Lening.query.get_or_404(lening_id)
+    lening.exemplaar.status = 'beschikbaar'
+    lening.datum_teruggekeerd = datetime.now()
+
+    boete = 0.0
+    if datetime.now().date() > lening.datum_terug_gepland:
+        dagen_te_laat = (datetime.now().date() - lening.datum_terug_gepland).days
+        boete = min(dagen_te_laat * 0.50, 5.00)
+        lening.boete_bedrag = boete
+
+    db.session.commit()
+
+    return jsonify({'success': True, 'boete': float(boete)})

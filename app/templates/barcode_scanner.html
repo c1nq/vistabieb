@@ -1,0 +1,295 @@
+{% extends "base.html" %}
+
+{% block title %}Barcode Scanner - Vista Leest{% endblock %}
+
+{% block content %}
+<style>
+    .viewport {
+        width: 100%;
+        max-width: 500px;
+        height: 400px;
+        position: relative;
+        background: #000;
+        margin: 0 auto;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    .viewport canvas,
+    .viewport video {
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        top: 0;
+        left: 0;
+    }
+    .result-panel {
+        display: none;
+        margin-top: 20px;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+    .result-panel.active {
+        display: block;
+    }
+    .action-panel {
+        display: none;
+        margin-top: 15px;
+        padding: 15px;
+        background: #e7f3ff;
+        border-radius: 8px;
+        border-left: 4px solid #007bff;
+    }
+    .action-panel.active {
+        display: block;
+    }
+    .status-badge {
+        display: inline-block;
+        padding: 5px 10px;
+        border-radius: 4px;
+        font-weight: bold;
+        margin-top: 10px;
+    }
+    .status-beschikbaar {
+        background: #d4edda;
+        color: #155724;
+    }
+    .status-uitgeleend {
+        background: #fff3cd;
+        color: #856404;
+    }
+    .toast {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 20px;
+        border-radius: 4px;
+        color: white;
+        font-weight: bold;
+        display: none;
+        z-index: 1000;
+    }
+    .toast.show {
+        display: block;
+    }
+    .toast.success {
+        background: #28a745;
+    }
+    .toast.error {
+        background: #dc3545;
+    }
+</style>
+
+<h1 class="mb-4">📱 Barcode Scanner</h1>
+
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <p class="text-muted">Scan een boekbarcode of typ deze handmatig in het veld hieronder.</p>
+
+        <div id="viewport-wrapper">
+            <div id="interactive" class="viewport"></div>
+        </div>
+
+        <div class="mt-3">
+            <label for="manual-barcode" class="form-label">Barcode (handmatig)</label>
+            <input type="text" id="manual-barcode" class="form-control" placeholder="Bijvoorbeeld: EX11">
+            <button type="button" id="manual-lookup-btn" class="btn btn-secondary mt-2">Opzoeken</button>
+        </div>
+
+        <div id="result-panel" class="result-panel">
+            <h3>📚 Boek gevonden</h3>
+            <div id="boek-info"></div>
+        </div>
+
+        <div id="checkout-panel" class="action-panel">
+            <h4>Boek uitleveren</h4>
+            <div class="mb-3">
+                <label for="lid-select" class="form-label">Lid selecteren</label>
+                <select id="lid-select" class="form-select">
+                    <option value="">-- Selecteer lid --</option>
+                    {% for lid in leden %}
+                    <option value="{{ lid.id }}">{{ lid.voornaam }} {{ lid.achternaam }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="button" id="checkout-btn" class="btn btn-success">Uitleveren</button>
+            <button type="button" id="clear-scan-btn" class="btn btn-secondary ms-2">Wissen</button>
+        </div>
+
+        <div id="return-panel" class="action-panel">
+            <h4>Boek inleveren</h4>
+            <p id="lening-info" class="text-muted"></p>
+            <button type="button" id="return-btn" class="btn btn-warning">Inleveren</button>
+            <button type="button" id="clear-scan-btn-2" class="btn btn-secondary ms-2">Wissen</button>
+        </div>
+    </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+<script>
+let currentScan = null;
+let lastScanTime = 0;
+const scanDebounceMs = 1500;
+
+function showToast(message, type = 'success') {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.className = `toast show ${type}`;
+    setTimeout(() => {
+        toast.classList.remove('show');
+    }, 3000);
+}
+
+function clearScan() {
+    currentScan = null;
+    document.getElementById('result-panel').classList.remove('active');
+    document.getElementById('checkout-panel').classList.remove('active');
+    document.getElementById('return-panel').classList.remove('active');
+    document.getElementById('manual-barcode').value = '';
+    lastScanTime = 0;
+}
+
+function displayResult(data) {
+    if (!data.found) {
+        showToast('Barcode niet gevonden', 'error');
+        return;
+    }
+
+    currentScan = data;
+    const boekHtml = `
+        <p><strong>Titel:</strong> ${data.boek.titel}</p>
+        <p><strong>Auteur:</strong> ${data.boek.auteur || 'Onbekend'}</p>
+        <p><strong>ISBN:</strong> ${data.boek.isbn || '-'}</p>
+        <span class="status-badge status-${data.status}">${data.status.toUpperCase()}</span>
+    `;
+    document.getElementById('boek-info').innerHTML = boekHtml;
+    document.getElementById('result-panel').classList.add('active');
+
+    if (data.status === 'beschikbaar') {
+        document.getElementById('checkout-panel').classList.add('active');
+        document.getElementById('return-panel').classList.remove('active');
+    } else if (data.status === 'uitgeleend') {
+        document.getElementById('return-panel').classList.add('active');
+        document.getElementById('checkout-panel').classList.remove('active');
+        if (data.lening_id) {
+            document.getElementById('lening-info').textContent = `Lening ID: ${data.lening_id}`;
+        }
+    }
+}
+
+function lookupBarcode(barcode) {
+    if (!barcode) return;
+    if (Date.now() - lastScanTime < scanDebounceMs) return;
+    lastScanTime = Date.now();
+
+    fetch(`/api/exemplaar/${barcode}`)
+        .then(r => r.json())
+        .then(displayResult)
+        .catch(err => showToast('Fout bij lookup: ' + err.message, 'error'));
+}
+
+// Manual barcode lookup
+document.getElementById('manual-lookup-btn').addEventListener('click', () => {
+    const barcode = document.getElementById('manual-barcode').value.trim();
+    if (!barcode) {
+        showToast('Voer een barcode in', 'error');
+        return;
+    }
+    lookupBarcode(barcode);
+});
+
+// Clear buttons
+document.getElementById('clear-scan-btn').addEventListener('click', clearScan);
+document.querySelectorAll('#clear-scan-btn-2').forEach(btn => {
+    btn.addEventListener('click', clearScan);
+});
+
+// Checkout button
+document.getElementById('checkout-btn').addEventListener('click', () => {
+    if (!currentScan) return;
+    const lidId = document.getElementById('lid-select').value;
+    if (!lidId) {
+        showToast('Selecteer een lid', 'error');
+        return;
+    }
+
+    fetch('/api/leningen/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ exemplaar_id: currentScan.exemplaar_id, lid_id: parseInt(lidId) })
+    })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                showToast(`Boek uitgeleend (Lening #${data.lening_id})`);
+                setTimeout(clearScan, 2000);
+            } else {
+                showToast('Fout: ' + data.error, 'error');
+            }
+        })
+        .catch(err => showToast('Fout bij uitlevering: ' + err.message, 'error'));
+});
+
+// Return button
+document.getElementById('return-btn').addEventListener('click', () => {
+    if (!currentScan || !currentScan.lening_id) return;
+
+    fetch('/api/leningen/return', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lening_id: currentScan.lening_id })
+    })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                let msg = 'Boek ingeleverd';
+                if (data.boete > 0) {
+                    msg += ` - Boete: €${data.boete.toFixed(2)}`;
+                }
+                showToast(msg);
+                setTimeout(clearScan, 2000);
+            } else {
+                showToast('Fout: ' + data.error, 'error');
+            }
+        })
+        .catch(err => showToast('Fout bij inlevering: ' + err.message, 'error'));
+});
+
+// QuaggaJS initialization
+Quagga.init({
+    inputStream: {
+        name: 'Live',
+        type: 'LiveStream',
+        target: document.querySelector('#interactive'),
+        constraints: {
+            width: 500,
+            height: 400,
+            facingMode: 'environment'
+        }
+    },
+    decoder: {
+        readers: ['code128_reader', 'ean_reader', 'code_39_reader']
+    }
+}, (err) => {
+    if (err) {
+        console.error('QuaggaJS init error:', err);
+        showToast('Kan camera niet openen. Controleer rechten.', 'error');
+        return;
+    }
+    Quagga.start();
+});
+
+Quagga.onDetected((result) => {
+    const code = result.codeResult.code;
+    if (code) {
+        lookupBarcode(code);
+    }
+});
+
+window.addEventListener('beforeunload', () => {
+    Quagga.stop();
+});
+</script>
+{% endblock %}
