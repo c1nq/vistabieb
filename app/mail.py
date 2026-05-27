@@ -37,7 +37,8 @@ def get_reminder_html(lening, reminder_type):
 
 def stuur_herinneringen(app):
     with app.app_context():
-        from app import mail
+        from flask_mail import Mail
+        mail = Mail(app)
         today = date.today()
         result = {'sent': 0, 'skipped': 0, 'errors': []}
 
