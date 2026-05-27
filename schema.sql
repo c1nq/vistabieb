@@ -53,7 +53,9 @@ datum_uitgeleend TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 datum_terug_gepland DATE,
 datum_teruggekeerd TIMESTAMP,
 boete_bedrag DECIMAL(6,2) DEFAULT 0,
-betaald BOOLEAN DEFAULT FALSE
+betaald BOOLEAN DEFAULT FALSE,
+levering_optie BOOLEAN DEFAULT FALSE,
+levering_status VARCHAR(50) DEFAULT NULL
 );
 
 CREATE INDEX idx_leningen_lid ON leningen(lid_id);

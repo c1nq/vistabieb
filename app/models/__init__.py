@@ -65,6 +65,8 @@ class Lening(db.Model):
     datum_teruggekeerd = db.Column(db.DateTime)
     boete_bedrag = db.Column(db.Numeric(6, 2), default=0)
     betaald = db.Column(db.Boolean, default=False)
+    levering_optie = db.Column(db.Boolean, default=False)
+    levering_status = db.Column(db.String(50))
 
 class Reservering(db.Model):
     __tablename__ = 'reserveringen'

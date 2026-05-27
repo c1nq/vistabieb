@@ -205,6 +205,52 @@ def leningen_return(id):
     db.session.commit()
     return redirect(url_for('main.leningen_list'))
 
+@main.route('/leningen/add', methods=['GET', 'POST'])
+def leningen_add():
+    if not check_login():
+        return redirect(url_for('auth.login'))
+
+    leden = Lid.query.all()
+    boeken = Boek.query.all()
+
+    if request.method == 'POST':
+        lid_id = request.form.get('lid_id')
+        boek_id = request.form.get('boek_id')
+        levering_optie = request.form.get('levering_optie') == 'on'
+
+        exemplaar = Exemplaar.query.filter_by(boek_id=boek_id, status='beschikbaar').first()
+        if not exemplaar:
+            return render_template('leningen_add_form.html', leden=leden, boeken=boeken, error='Geen beschikbare exemplaren voor dit boek')
+
+        lening = Lening(
+            exemplaar_id=exemplaar.id,
+            lid_id=lid_id,
+            datum_terug_gepland=(datetime.now() + timedelta(days=21)).date(),
+            levering_optie=levering_optie,
+            levering_status='aangevraagd' if levering_optie else None
+        )
+        exemplaar.status = 'uitgeleend'
+        db.session.add(lening)
+        db.session.commit()
+
+        return redirect(url_for('main.leningen_list'))
+
+    return render_template('leningen_add_form.html', leden=leden, boeken=boeken)
+
+@main.route('/leningen/<int:id>/levering', methods=['POST'])
+def leningen_levering(id):
+    if not check_login():
+        return redirect(url_for('auth.login'))
+
+    lening = Lening.query.get_or_404(id)
+    status = request.form.get('levering_status')
+
+    if status in ['aangevraagd', 'ingepland', 'afgeleverd']:
+        lening.levering_status = status
+        db.session.commit()
+
+    return redirect(url_for('main.leningen_list'))
+
 # RESERVERINGEN
 @main.route('/reserveringen')
 def reserveringen_list():
