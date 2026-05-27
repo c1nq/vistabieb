@@ -5,14 +5,29 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1>Herinneringen</h1>
-    <form method="post" action="/herinneringen/stuur" style="display:inline;">
-        <button type="submit" class="btn btn-primary">Stuur herinneringen nu</button>
-    </form>
+    <div>
+        <form method="post" action="/herinneringen/stuur" style="display:inline;">
+            <button type="submit" class="btn btn-primary">Stuur herinneringen nu</button>
+        </form>
+        <form method="post" action="/herinneringen/test-mail" style="display:inline; margin-left: 10px;">
+            <button type="submit" class="btn btn-secondary">📧 Test Mail</button>
+        </form>
+    </div>
 </div>
 
 {% if result_count > 0 %}
 <div class="alert alert-success" role="alert">
     ✓ <strong>{{ result_count }}</strong> herinneringen verstuurd
+</div>
+{% endif %}
+
+{% if test_result == 'success' %}
+<div class="alert alert-info" role="alert">
+    ✅ Test email verzonden! Controleer je inbox.
+</div>
+{% elif test_result and test_result.startswith('error:') %}
+<div class="alert alert-danger" role="alert">
+    ❌ Fout bij test mail: {{ test_result[6:] }}
 </div>
 {% endif %}
 

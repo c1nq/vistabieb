@@ -417,8 +417,9 @@ def herinneringen_list():
 
     herinneringen = Herinnering.query.all()
     result_count = request.args.get('result', 0, type=int)
+    test_result = request.args.get('test_result', '')
 
-    return render_template('herinneringen_list.html', herinneringen=herinneringen, result_count=result_count)
+    return render_template('herinneringen_list.html', herinneringen=herinneringen, result_count=result_count, test_result=test_result)
 
 @main.route('/herinneringen/stuur', methods=['POST'])
 def herinneringen_stuur():
@@ -427,3 +428,22 @@ def herinneringen_stuur():
 
     result = stuur_herinneringen(current_app._get_current_object())
     return redirect(url_for('main.herinneringen_list', result=result['sent']))
+
+@main.route('/herinneringen/test-mail', methods=['POST'])
+def herinneringen_test_mail():
+    if not check_login():
+        return redirect(url_for('auth.login'))
+
+    from flask_mail import Mail, Message
+    mail = Mail(current_app._get_current_object())
+
+    try:
+        msg = Message(
+            subject='Test Email - Vista Leest Mail Systeem',
+            recipients=[current_app.config.get('MAIL_USERNAME', 'test@example.com')],
+            html='<h2>Vista Leest Mail Systeem Test</h2><p>Dit is een test email om te controleren of het mail systeem correct werkt.</p><p><strong>Als je dit ziet, werkt alles!</strong></p>'
+        )
+        mail.send(msg)
+        return redirect(url_for('main.herinneringen_list', test_result='success'))
+    except Exception as e:
+        return redirect(url_for('main.herinneringen_list', test_result=f'error:{str(e)}'))
