@@ -224,7 +224,7 @@ def leningen_return(id):
     # Boete berekenen
     if datetime.now().date() > lening.datum_terug_gepland:
         dagen_te_laat = (datetime.now().date() - lening.datum_terug_gepland).days
-        lening.boete_bedrag = dagen_te_laat * 0.50  # €0.50 per dag
+        lening.boete_bedrag = min(dagen_te_laat * 0.50, 5.00)
 
     db.session.commit()
     return redirect(url_for('main.leningen_list'))
