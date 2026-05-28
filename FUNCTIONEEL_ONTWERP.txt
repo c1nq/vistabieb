@@ -1,0 +1,308 @@
+FUNCTIONEEL ONTWERP - VISTA LEEST
+==================================
+
+Versie: 1.0
+Datum: 27 mei 2026
+Auteur: Cypher
+
+---
+
+1. WAT GAAT HET SYSTEEM DOEN
+=============================
+
+Vista Leest is een website waar je kan:
+- Inloggen met je leerlingnummer
+- Boeken zoeken
+- Boeken uitlenen/teruggeven
+- Boeken reserveren
+- Herinneringen krijgen
+
+3 Soorten gebruikers:
+- Admin: Alles kan doen
+- Medewerker: Kan leningen registreren en boeken beheren
+- Student: Kan zoeken, reserveren, eigen leningen zien
+
+---
+
+2. DE PAGINA'S DIE WE GAAN MAKEN
+=================================
+
+LOGIN PAGINA:
+- Je typt leerlingnummer + wachtwoord in
+- Systeem checkt of het klopt
+- Ja? Dan ga je naar dashboard
+- Nee? Dan foutmelding + probeer opnieuw
+- Na 5 mislukte pogingen: geblokkeerd voor 5 minuten
+
+DASHBOARD:
+- Statistieken: hoeveel leden, boeken, leningen
+- Welkom bericht met je naam
+- Links naar alle functies
+
+LEDEN PAGINA:
+- Tabel met alle leden
+- Zoeken op naam, email, leerlingnummer
+- Knop "Toevoegen lid"
+- Bij iedere lid: "Wijzigen" en "Verwijderen" knoppen
+- Formulier met: voornaam, achternaam, email, telefoon, adres, leerlingnummer
+
+BOEKEN PAGINA:
+- Tabel met alle boeken
+- Zoeken op titel, auteur, categorie, trefwoord
+- Filteren op categorie
+- Knop "Toevoegen boek"
+- Bij ieder boek: "Wijzigen" knop, "Reserveer" knop
+- Formulier met: titel, auteur, ISBN, categorie, trefwoorden, onderwerp, jaar
+
+LENINGEN PAGINA:
+- Twee secties: Actieve leningen | Ingeleverde leningen
+- Actief: Lid, Boek, Uitgeleend op, Terug gepland, Status, "Inleveren" knop
+- Ingeleverd: Lid, Boek, Ingeleverd op, Boete bedrag
+
+SCANNER PAGINA:
+- Grote webcam feed in het midden
+- Tekst: "Richt camera op barcode..."
+- Als je barcode scant: toon boek details
+- Dropdown met leden om te selecteren
+- Knop "Uitleveren"
+- Fallback: je kan ook handmatig barcode typen
+
+RESERVERINGEN PAGINA:
+- Tabel met alle reserveringen
+- Actieve reserveringen bovenaan
+- Kolommen: Lid, Boek, Gereserveerd op, Status
+- Knop "Annuleren" per reservering
+
+HERINNERINGEN PAGINA:
+- Overzicht van alle geplande herinneringen
+- Knop "Stuur herinneringen" (handmatig trigger)
+- Tabel met: wanneer verzonden, naar wie, type
+
+---
+
+3. HOE WERKEN DE WORKFLOWS
+============================
+
+WORKFLOW 1: BOEK UITLENEN
+1. Medewerker gaat naar Scanner pagina
+2. Student levert boek in bij balie
+3. Medewerker scant barcode op boek
+4. Systeem zoekt exemplaar en toont details
+5. Is boek beschikbaar? JA → toon leden dropdown
+6. Medewerker selecteert student
+7. Klikt "Uitleveren"
+8. Systeem maakt lening aan: datum_uitgeleend = vandaag
+9. Berekent: datum_terug = vandaag + 21 dagen
+10. Exemplaar status → "uitgeleend"
+11. Toon bevestiging: "Boek uitgeleend tot 17 juni"
+
+WORKFLOW 2: BOEK INLEVEREN
+1. Student levert boek terug in bij balie
+2. Medewerker zoekt lening in leningen pagina
+3. Klikt "Inleveren" knop
+4. Systeem zet: datum_teruggekeerd = vandaag
+5. Checkt: is vandaag later dan terug_gepland?
+6. JA → bereken boete: (vandaag - terug_gepland) * €0,50
+7. NEE → geen boete
+8. Exemplaar status → "beschikbaar"
+9. Toon: "Ingeleverd. Boete: €[bedrag]" (of "Geen boete")
+
+WORKFLOW 3: STUDENT RESERVEERT BOEK
+1. Student ingelogd
+2. Gaat naar boeken pagina
+3. Zoekt boek (bijv. "Python 101")
+4. Boek staat "UITGELEEND"
+5. Klikt knop "Reserveer"
+6. Systeem checkt: heeft deze student al een actieve reservering voor dit boek?
+7. NEE → toon formulier
+8. Student klikt "Bevestig reservering"
+9. Systeem maakt reservering aan
+10. Toon: "Reservering gemaakt! Je krijgt een email als het beschikbaar is"
+11. Elke dag 00:00: systeem checkt gereserveerde boeken
+12. Is boek nu beschikbaar?
+13. JA → email naar student: "Je gereserveerde boek 'Python 101' is nu beschikbaar!"
+
+WORKFLOW 4: HERINNERINGEN VERSTUREN
+1. Admin gaat naar herinneringen pagina
+2. Klikt "Stuur herinneringen"
+3. ÓÓK: elke dag om 00:00 automatisch trigger
+4. Systeem zoekt alle ACTIEVE leningen
+5. Voor iedere lening checkt: hoeveel dagen tot deadline?
+6. 3 dagen voor? → Type 1 email versturen
+7. Op deadline? → Type 2 email versturen
+8. 7+ dagen na deadline? → Type 3 email versturen
+9. Check: is deze mail al verzonden? (dubbele check)
+10. NEE → verstuur via Gmail
+11. Markeer als "sent" in database
+
+---
+
+4. DE EMAILS DIE GAAN VERSTUURD WORDEN
+=======================================
+
+EMAIL TYPE 1 (3 dagen voor):
+Onderwerp: Je boek moet over 3 dagen terug
+Inhoud: "Hé [naam], je hebt het boek '[titel]' geleend. Je mag het nog 3 dagen houden, 
+daarna moet het terug. Zorg dat je het inlevert op [datum]!"
+
+EMAIL TYPE 2 (op deadline):
+Onderwerp: Je boek MOET vandaag terug!
+Inhoud: "Hé [naam], je boek '[titel]' MOET VANDAAG ingeleverd worden! 
+Breng het nu naar de bibliotheek anders krijg je boete."
+
+EMAIL TYPE 3 (7 dagen na deadline):
+Onderwerp: Je schuld aan Vista Leest: €[boete]
+Inhoud: "Hé [naam], je boek '[titel]' is nu [aantal] dagen te laat! 
+Je schuld: €[boete]. Betaal dit asap."
+
+---
+
+5. BOETE BEREKENING
+====================
+
+Hoe rekenen we boete?
+- Uitleentermijn: 21 dagen
+- Boete: €0,50 per dag te laat
+- Maximum: €5,00
+
+Voorbeeld:
+- Uitgeleend: 1 juni
+- Terug gepland: 22 juni
+- Ingeleverd: 29 juni
+- Dagen te laat: 7 dagen
+- Boete: 7 * €0,50 = €3,50 ✓
+
+Ander voorbeeld:
+- Dagen te laat: 20 dagen
+- Boete: 20 * €0,50 = €10,00
+- MAAR: maximum is €5,00
+- Dus: €5,00 ✓
+
+---
+
+6. ZOEKEN EN FILTEREN
+======================
+
+BOEKEN ZOEKEN:
+- Titelzoeking: "Python" → vind "Python 101", "Python Advanced"
+- Auteurzoeking: "Mark Lutz"
+- Categoriefiteringen: "Science Fiction", "Non-fiction"
+- Trefwoord zoeken: "network", "database"
+
+LEDEN ZOEKEN:
+- Naam: "Jan Jansen"
+- Email: "jan@..."
+- Leerlingnummer: "L12345"
+
+LENINGEN ZOEKEN:
+- Filter op status: "ACTIEF", "INGELEVERD"
+- Filter op lid: "Jan Jansen"
+- Filter op boek: "Python 101"
+
+---
+
+7. NAVIGATIEMENU
+=================
+
+Nav links die je ziet (afhankelijk van rol):
+
+Admin/Medewerker:
+- Dashboard
+- Leden
+- Boeken
+- Leningen
+- Scanner (barcode)
+- Reserveringen
+- Herinneringen
+- Database (info)
+- Uitloggen
+
+Student:
+- Dashboard
+- Mijn leningen
+- Boeken zoeken
+- Mijn reserveringen
+- Uitloggen
+
+---
+
+8. VALIDATIE (CONTROLES)
+=========================
+
+LEERLINGNUMMER:
+- Minimum 1 karakter, maximum 10 karakters
+- Alleen letters en nummers
+- UNIQUE (geen duplicaten)
+
+EMAIL:
+- Moet geldig email format zijn
+- UNIQUE (niemand twee keer dezelfde email)
+
+WACHTWOORD:
+- Minimum 8 karakters
+- Mag alles zijn (letters, nummers, special chars)
+
+ISBN:
+- 10 of 13 karakters
+- Alleen nummers
+
+BARCODE:
+- Minimum 6 karakters
+- Maximum 50 karakters
+- UNIQUE
+
+---
+
+9. RESPONSIEF DESIGN (MOBILE/TABLET/DESKTOP)
+==============================================
+
+DESKTOP (1200px+):
+- Sidebar met nav links
+- 2-3 kolommen layout
+- Grote tabellen
+
+TABLET (768px - 1199px):
+- Menu hamburger (collapsible)
+- 1-2 kolommen
+- Smaller padding
+
+MOBILE (< 768px):
+- Fullscreen hamburger menu
+- 1 kolom only
+- Barcode scanner fullscreen
+- Grotere buttons
+
+---
+
+10. UI/UX DESIGN KEUZES
+=======================
+
+KLEUREN:
+- Vista navy: #003D7A (voor nav, headers)
+- Vista orange: #E8801A (voor buttons, accents)
+- Wit: background
+- Grijs: secondary text
+
+ICONEN:
+- Geen fancy icons, gewoon simpel
+- Plus icon: toevoegen
+- Trash icon: verwijderen
+- Edit icon: wijzigen
+- Check: bevestigd
+
+BUTTONS:
+- Primair: orange (Vista kleur)
+- Danger: rood (verwijderen)
+- Success: groen (inleveren)
+- Secondary: grijs (annuleren)
+
+STATUS BADGES:
+- ACTIEF: geel/warning
+- INGELEVERD: groen/success
+- BESCHIKBAAR: blauw/info
+- BESCHADIGD: rood/danger
+- GERESERVEERD: oranje/primary
+
+---
+
+Klaar! Dit is hoe het systeem werkt van gebruiker's perspectief.

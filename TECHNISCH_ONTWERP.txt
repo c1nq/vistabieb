@@ -1,0 +1,470 @@
+TECHNISCH ONTWERP - VISTA LEEST
+================================
+
+Versie: 1.0
+Datum: 27 mei 2026
+Technisch leider: Cypher (system engineer)
+
+---
+
+1. ARCHITEKTUR (HOE BOUW JE HET)
+=================================
+
+3-LAAGSE ARCHITECTUUR:
+
+[Frontend]
+├── Browser
+├── HTML/CSS/Bootstrap 5
+└── JavaScript (QuaggaJS voor barcode)
+        ↓
+[Backend]
+├── Python Flask (webserver)
+├── SQLAlchemy (ORM)
+└── Flask-Mail (email)
+        ↓
+[Database]
+└── PostgreSQL 18.4
+
+Wanneer je naar /boeken gaat:
+1. Browser stuurt GET request naar Flask
+2. Flask zoekt alle boeken in database
+3. Flask renders HTML template (base.html + boeken_list.html)
+4. Bootstrap CSS maakt het mooi
+5. Browser toont pagina
+
+---
+
+2. DATABASE SCHEMA
+==================
+
+7 TABELLEN:
+
+users:
+- id (primary key)
+- leerlingnummer (UNIQUE, bijv "admin")
+- email (UNIQUE)
+- password_hash (bcrypt gehasht)
+- role (admin / medewerker / student)
+- created_at (timestamp)
+
+leden:
+- id
+- voornaam, achternaam
+- email (UNIQUE)
+- telefoon
+- adres, postcode, plaats
+- leerlingnummer
+- interessegebieden (voor later)
+- actief (boolean: true/false)
+- created_at
+
+boeken:
+- id
+- titel, auteur
+- isbn (UNIQUE)
+- uitgever
+- jaar_uitgave (2024, etc)
+- categorie (SciFi, Fantasy, etc)
+- trefwoorden (comma-separated)
+- onderwerp (programmeren, fantasy, etc)
+- created_at
+
+exemplaren:
+- id
+- boek_id (link naar boeken, FK)
+- barcode (UNIQUE, bijv "EX001", "EX002")
+- status (beschikbaar / uitgeleend / beschadigd)
+- created_at
+
+leningen:
+- id
+- exemplaar_id (FK naar exemplaren)
+- lid_id (FK naar leden)
+- datum_uitgeleend (timestamp)
+- datum_terug_gepland (date, bijv 2026-06-17)
+- datum_teruggekeerd (timestamp, null tot ingeleverd)
+- boete_bedrag (decimal, €0.50)
+- betaald (boolean)
+- levering_optie (boolean: ja/nee levering)
+- levering_status (ingepland / geleverd)
+- created_at
+
+reserveringen:
+- id
+- lid_id (FK)
+- boek_id (FK)
+- datum_gereserveerd (timestamp)
+- status (actief / geannuleerd / opgehaald)
+- created_at
+
+herinneringen:
+- id
+- lening_id (FK)
+- type (1=3_dagen, 2=deadline, 3=7_days_late)
+- datum_verzonden (timestamp)
+- sent (boolean)
+- created_at
+
+INDICES (VOOR SNELHEID):
+- users.leerlingnummer (zoeken op login)
+- leden.email (zoeken leden)
+- exemplaren.barcode (barcode scanner)
+- exemplaren.status (beschikbare exemplaren)
+- leningen.exemplaar_id, lid_id, status
+- reserveringen.status
+
+---
+
+3. BACKEND: PYTHON FLASK
+=========================
+
+FOLDER STRUCTUUR:
+
+vistabieb/
+├── app/
+│   ├── __init__.py (Flask app aanmaken)
+│   ├── models/
+│   │   └── __init__.py (User, Lid, Boek, Exemplaar, Lening, Reservering, Herinnering)
+│   ├── routes/
+│   │   └── __init__.py (auth, main blueprints)
+│   ├── templates/ (HTML bestanden)
+│   └── static/ (CSS)
+├── config.py (database URI, secret key)
+├── run.py (python run.py → start app)
+├── setup_user.py (admin user aanmaken)
+├── seed_data.py (testdata inladen)
+├── stuur_herinneringen.py (cron script)
+├── backup.sh (postgres backup script)
+├── requirements.txt (dependencies)
+└── .env (secrets)
+
+DEPENDENCIES:
+- flask 2.3.0 (webserver framework)
+- flask-sqlalchemy 3.0.0 (database ORM)
+- flask-login 0.6.2 (session management)
+- flask-mail 0.9.1 (email sending)
+- psycopg2-binary 2.9.0 (postgresql driver)
+- bcrypt 4.0.0 (password hashing)
+- python-dotenv 1.0.0 (.env file support)
+
+ROUTES (25+):
+
+GET    /login              → login formulier
+POST   /login              → authenticeer (check leerlingnummer + hash)
+GET    /logout             → session clearen
+
+GET    /dashboard          → statistieken tonen
+GET    /leden              → tabel met alle leden
+GET    /leden/add          → formulier
+POST   /leden/add          → INSERT INTO leden
+GET    /leden/<id>/edit    → edit formulier
+POST   /leden/<id>/edit    → UPDATE leden
+POST   /leden/<id>/delete  → DELETE leden
+
+GET    /boeken             → tabel met alle boeken + zoeken
+GET    /boeken/add         → formulier
+POST   /boeken/add         → INSERT INTO boeken
+GET    /boeken/<id>/edit   → edit formulier
+POST   /boeken/<id>/edit   → UPDATE boeken
+
+GET    /barcode-scanner    → webcam + QuaggaJS
+POST   /api/exemplaar/<barcode> → lookup (JSON response)
+POST   /api/leningen/checkout    → lening registreren
+POST   /api/leningen/return      → inleveren + boete calc
+
+GET    /leningen           → alle leningen tabel
+GET    /reserveringen      → alle reserveringen
+GET    /reserveringen/new/<boek_id> → formulier
+POST   /reserveringen/new/<boek_id> → INSERT
+POST   /reserveringen/<id>/cancel    → UPDATE status
+
+GET    /herinneringen      → admin dashboard
+POST   /herinneringen/stuur → trigger email sturen
+
+GET    /database           → database info (admin only)
+
+MODELS (SQLAlchemy ORM):
+
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    leerlingnummer = db.Column(db.String(10), unique=True, nullable=False)
+    password_hash = db.Column(db.String(255), nullable=False)
+    role = db.Column(db.String(20), default='medewerker')
+    
+    def check_password(self, password):
+        return bcrypt.check_password_hash(self.password_hash, password)
+
+(Dezelfde soort voor Lid, Boek, Exemplaar, Lening, etc)
+
+---
+
+4. FRONTEND: BOOTSTRAP 5 + HTML
+================================
+
+TEMPLATE STRUCTUUR:
+
+base.html (EXTENDS IN ALLE PAGINA'S):
+- Navbar bovenaan (Vista kleuren)
+- Flash messages (alerts)
+- Main content block
+- Footer
+
+login.html:
+- Centered card met formulier
+- leerlingnummer input
+- password input
+- Login button
+- Vista logo
+
+dashboard.html:
+- 4 grote kaarten: Leden count, Boeken count, Leningen count, Reserveringen count
+- Quick links naar functies
+
+leden_list.html:
+- Zoekbalk bovenaan
+- "Toevoegen" button
+- Tabel met alle leden
+- Per lid: edit/delete buttons
+
+leden_form.html:
+- Form met velden: voornaam, achternaam, email, telefoon, etc
+- Submit button
+- Cancel button
+
+boeken_list.html:
+- Zoekbalk
+- Filter dropdown (categorie)
+- "Toevoegen" button
+- Tabel: titel, auteur, categorie
+- Per boek: edit button, "Reserveer" button
+
+leningen_list.html:
+- Twee tabs: "Actieve" en "Ingeleverde"
+- Tabel met kolommen
+- Per lening: "Inleveren" button (actieve)
+- Boete tonen (ingeleverde)
+
+barcode_scanner.html:
+- Groot div voor video feed
+- QuaggaJS laden en start
+- Real-time barcode display
+- Dropdown met leden
+- "Uitleveren" button
+
+reserveringen_list.html:
+- Actieve reserveringen tabel
+- Geannuleerde reserveringen tabel
+- Per reservering: "Annuleren" button
+
+herinneringen_list.html:
+- Tabel met all herinneringen
+- Datum verzonden, naar wie, type
+- "Stuur herinneringen" button (manual trigger)
+
+---
+
+5. BARCODE SCANNING
+====================
+
+QUAGGAJS SETUP:
+
+<script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@..."></script>
+
+Quagga.init({
+    inputStream: {
+        name: "Live",
+        type: "LiveStream",
+        target: document.querySelector('#scanner'),
+        constraints: { facingMode: "environment" }  // back camera
+    },
+    decoder: {
+        readers: ["code_128_reader", "ean_reader", "upc_reader"]
+    }
+}, function(err) {
+    if(err) { console.error(err); return; }
+    Quagga.start();
+});
+
+Quagga.onDetected(function(result) {
+    var barcode = result.codeResult.code;
+    fetch('/api/exemplaar/' + barcode)
+        .then(r => r.json())
+        .then(data => {
+            // toon boek info
+        });
+});
+
+FALLBACK: Als barcode niet gescand kan worden, handmatig invoeren in input field.
+
+---
+
+6. EMAIL SYSTEEM
+=================
+
+SMTP CONFIG:
+
+Server: smtp.gmail.com
+Port: 587
+TLS: enabled
+Username: sem.enkelmans@gmail.com
+Password: [app password uit gmail settings]
+
+In config.py:
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
+
+EMAIL VERSTUREN:
+
+msg = Message(
+    subject='Je boek moet terug!',
+    recipients=[lening.lid.email],
+    body='Hé, je boek moet over 3 dagen terug...'
+)
+mail.send(msg)
+
+HERINNERINGEN ELKE DAG:
+
+In cron job (00:00):
+python stuur_herinneringen.py
+
+Dit script:
+1. Query alle ACTIEVE leningen
+2. Voor iedere lening: check hoeveel dagen tot deadline
+3. Bepaal herinnering type (1, 2, of 3)
+4. Check of al verzonden (SELECT FROM herinneringen)
+5. Nee? Dan verstuur email
+6. INSERT INTO herinneringen (sent=true)
+
+---
+
+7. BEVEILIGING
+===============
+
+AUTHENTICATIE:
+- Wachtwoord hashing: bcrypt (never plaintext)
+- Session management: Flask-Login
+- Session timeout: 30 minuten
+
+VALIDATIE:
+- Server-side validation (not client-only)
+- SQL injection: SQLAlchemy ORM (parameterized queries)
+- XSS: Jinja2 auto-escaping in templates
+- CSRF: Flask-WTF tokens in forms
+
+RATE LIMITING:
+- Max 5 login pogingen per 5 minuten
+- Ban IP na 5 pogingen (5 minuten)
+
+---
+
+8. BACKUP EN RECOVERY
+======================
+
+BACKUP SCRIPT (backup.sh):
+
+#!/bin/bash
+TIMESTAMP=$(date +%Y-%m-%d)
+pg_dump -U cypher vistabieb > /home/cypher/Projects/vistabieb/backups/vistabieb_$TIMESTAMP.sql
+echo "Backup gemaakt: $TIMESTAMP" >> /home/cypher/Projects/vistabieb/backups/backup.log
+
+CRON JOB (00:00 elke dag):
+0 0 * * * /bin/bash /home/cypher/Projects/vistabieb/backup.sh
+
+RESTORE PROCEDURE:
+# 1. Zet database offline
+sudo systemctl stop postgres
+
+# 2. Verwijder oude database
+dropdb -U postgres vistabieb
+
+# 3. Maak nieuwe database
+createdb -U postgres vistabieb
+
+# 4. Restore backup
+psql -U postgres -d vistabieb -f vistabieb_2026-05-27.sql
+
+# 5. Start postgres weer
+sudo systemctl start postgres
+
+# 6. Test
+python run.py
+
+---
+
+9. PERFORMANCE TUNING
+======================
+
+DATABASE:
+- Indices op frequently-used columns
+- Connection pooling (SQLAlchemy pool_size=10)
+- Query optimization (EXPLAIN ANALYZE)
+
+FRONTEND:
+- CSS minification
+- JavaScript minification
+- Static files via Nginx cache
+
+CACHING:
+- Session data (user info)
+- Boeken list (cache invalidate on add/edit)
+
+---
+
+10. DEPLOYMENT
+===============
+
+PRODUCTION CHECKLIST:
+
+✓ Database schema (schema.sql)
+✓ Python venv + requirements.txt
+✓ .env met echte credentials
+✓ Admin user setup
+✓ Testdata (optional)
+✓ HTTPS certificaat (Let's Encrypt)
+✓ Nginx reverse proxy config
+✓ Systemd service file
+✓ Cron jobs (backup + herinneringen)
+✓ Logrotate config
+✓ Firewall (port 443 open)
+✓ Security audit
+✓ Load testing
+✓ UAT met klant
+✓ Go-live
+
+SYSTEMD SERVICE:
+
+/etc/systemd/system/vistabieb.service:
+
+[Unit]
+Description=Vista Leest Web App
+After=network.target
+
+[Service]
+User=cypher
+WorkingDirectory=/home/cypher/Projects/vistabieb
+Environment="PATH=/home/cypher/Projects/vistabieb/.venv/bin"
+ExecStart=/home/cypher/Projects/vistabieb/.venv/bin/gunicorn --workers 4 --bind 127.0.0.1:5000 app:app
+
+[Install]
+WantedBy=multi-user.target
+
+Start:
+sudo systemctl start vistabieb
+sudo systemctl enable vistabieb
+
+---
+
+11. MONITORING
+===============
+
+LOGS:
+- Application logs: journalctl -u vistabieb
+- Error tracking: try/except blocks
+- Slow queries: query execution time logging
+
+---
+
+Klaar! Dit is hoe het technisch werkt.

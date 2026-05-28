@@ -1,0 +1,220 @@
+BEHOEFTEANALYSE - VISTA LEEST
+============================
+
+Versie: 1.0
+Datum: 27 mei 2026
+Klant: R. Zeil (Vista College)
+Gemaakt door: Cypher
+
+---
+
+1. HUIDING SITUATIE
+===================
+
+Vista Leest heeft momenteel een echt slecht systeem voor het bibliotheek beheer. 
+Alles is handmatig en slecht georganiseerd. Er is geen goed overzicht van welke boeken 
+er zijn, wie wat geleend heeft, en wanneer boeken terug moeten.
+
+Wat gaat nu fout:
+- Geen digitaal systeem voor boeken registratie
+- Alles wordt handmatig opgeschreven (papier/excel)
+- Studenten kunnen niet zelf boeken zoeken of reserveren
+- Geen automatische herinneringen als boeken te laat zijn
+- Niemand weet hoeveel boete je moet betalen
+- Gewoon echt inefficiënt en verwarrend
+
+---
+
+2. DOEL VAN HET PROJECT
+=======================
+
+We gaan een compleet nieuw bibliotheaksysteem bouwen zodat:
+
+✓ Boeken makkelijk in het systeem kunnen
+✓ Studenten zelf kunnen inloggen en boeken zoeken
+✓ Leningen registreren gaat supersnel (met barcode scanner)
+✓ Boeken teruggeven is makkelijk en boete gaat automatisch
+✓ Je automatisch een mail krijgt als je boek te laat is
+✓ Je gereserveerde boeken kan als die beschikbaar zijn
+✓ Admin kan alles controleren
+✓ Er is elke dag een backup dus geen dataverlies
+
+Kortom: Alles wat nu slecht is, gaat beter worden.
+
+---
+
+3. SCOPE - WAT DOEN WE WEL EN NIET
+===================================
+
+WEL DOEN:
+- Inloggen met leerlingnummer en wachtwoord
+- Alle CRUD operaties (boeken toevoegen, wijzigen, verwijderen)
+- Leden beheren (studenten, medewerkers)
+- Boeken uit- en inleveren
+- Barcode scanner (met je webcam)
+- Reserveringen systeem
+- Automatische herinneringen via email
+- Boete berekening (€0,50 per dag)
+- Nederlands taal
+- Dagelijks backup
+- 3 rollen: admin, medewerker, student
+
+NIET DOEN (nog niet, misschien later):
+- Betaalsysteem voor boetes
+- App voor telefoon
+- API voor externe systemen
+
+---
+
+4. REQUIREMENTS VAN DE KLANT
+============================
+
+We hebben met R. Zeil gesproken en dit is wat nodig is:
+
+AUTHENTICATIE:
+- Login met leerlingnummer + wachtwoord
+- 2 rollen: admin (alles), medewerker (lenen/teruggeven), student (reserveren)
+- Minimum 8 karakters wachtwoord
+
+BOEKEN:
+- Titel, auteur, ISBN, categorie, trefwoorden, onderwerp
+- Zoeken/filteren op alles
+- Meerdere exemplaren per boek (met barcode)
+- Status per exemplaar: beschikbaar, uitgeleend, beschadigd
+
+LEDEN:
+- Voornaam, achternaam, email, telefoon, adres, leerlingnummer
+- Kunnen op actief/inactief gezet worden
+
+LENINGEN:
+- Uitleentermijn: 21 dagen
+- Mag 1x verlengen
+- Boete: €0,50 per dag, MAX €5,00
+- Registratie via barcode
+
+RESERVERINGEN:
+- Studenten kunnen gereserveerde boeken reserveren
+- FIFO (wie eerst reserveert krijgt eerst)
+- Email when beschikbaar
+
+HERINNERINGEN:
+- Email 3 dagen voor deadline
+- Email op deadline
+- Email 7 dagen na deadline (met hoeveel je schuldig bent)
+
+LEVERING:
+- Optie om boek op locatie te leveren (niet zelf afhalen)
+- Status tracking
+
+OVERIG:
+- Vista kleuren op de site
+- Nederlands taal
+- Barcode scanner met je webcam
+- Backup elke dag om 00:00
+
+---
+
+5. USER STORIES (WAT WILLEN GEBRUIKERS)
+========================================
+
+Als student:
+- Ik wil kunnen inloggen met mijn leerlingnummer
+- Ik wil boeken kunnen zoeken
+- Ik wil een boek kunnen reserveren
+- Ik wil mijn geleende boeken zien
+- Ik wil een email krijgen als mijn gereserveerde boek beschikbaar is
+
+Als medewerker:
+- Ik wil boeken snel kunnen uitlenen (barcode scannen)
+- Ik wil boeken terugnemen (inleveren)
+- Ik wil zien of boete verschuldigd is
+- Ik wil boeken en leden kunnen toevoegen/wijzigen
+
+Als admin:
+- Ik wil alles kunnen zien en beheren
+- Ik wil herinneringen kunnen sturen
+- Ik wil een backup kunnen maken
+- Ik wil rollen beheren
+
+---
+
+6. TECHNISCHE KEUZES
+=====================
+
+DATABASE:
+- PostgreSQL 18.4 (want het is betrouwbaar en snel)
+
+BACKEND:
+- Python Flask (makkelijk, snel, goed onderwijd)
+
+FRONTEND:
+- Bootstrap 5 (mooie responsive design)
+
+BARCODE:
+- QuaggaJS in de browser (je webcam, geen speciale hardware)
+
+SERVER:
+- Linux Garuda (waar we al op werken)
+
+---
+
+7. PERFORMANCE & BEVEILIGING
+=============================
+
+PERFORMANCE:
+- Pagina's moet in < 2 seconden laden
+- Barcode scan moet < 500ms zijn
+- Minimaal 100 studenten tegelijk kunnen inloggen
+
+BEVEILIGING:
+- Wachtwoorden gehasht (bcrypt)
+- HTTPS in productie (veilig)
+- Geen SQL injection (use ORM)
+- CSRF tokens (tokens checken)
+- Rate limiting (max 5 login pogingen per 5 minuten)
+- AVG compliant (geen onnodig persoonsgegevens opslaan)
+
+BACKUP:
+- Elke dag om 00:00 backup maken
+- 30 dagen bewaren
+- 1x per week testen of het werkt
+
+---
+
+8. ACCEPTATIECRITERIA (HOE WETEN WE DAT HET KLAAR IS)
+======================================================
+
+✓ Systeem werkt helemaal op 18 juni
+✓ Alle 20 requirements zijn gedaan
+✓ Barcode scanner werkt
+✓ 100+ users tegelijk kunnen inloggen
+✓ Herinneringen verzenden automatisch
+✓ Backup/restore werkt
+✓ Klant is tevreden
+
+---
+
+9. PLANNING
+===========
+
+WEEK 1 (26-30 mei):
+- Database schema
+- Models aanmaken
+- Leerlingnummer login
+- Rollen systeem
+
+WEEK 2 (2-6 juni):
+- Boeken CRUD
+- Barcode scanner
+- Leningen (uit/inleveren)
+- Reserveringen
+
+WEEK 3 (13-18 juni):
+- Vista design (kleuren, logo)
+- Herinneringen
+- Testing
+- LIVE GAAN OP 18 JUNI
+
+---
+
+Klaar voor development!
