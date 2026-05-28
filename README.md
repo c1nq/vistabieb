@@ -1,6 +1,4 @@
-bashnano README.md
-Vervang alles met placeholders:
-markdownWebgebaseerd bibliotheekbeheersysteem voor Vista College gebouwd met Python Flask en PostgreSQL.
+Webgebaseerd bibliotheekbeheersysteem voor Vista College gebouwd met Python Flask en PostgreSQL.
 
 ## 🎯 Wat is dit?
 
