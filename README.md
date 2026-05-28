@@ -1,7 +1,3 @@
-bashnano README.md
-Plak dit:
-markdown# Vista Leest - Bibliotheekbeheersysteem
-
 Webgebaseerd bibliotheekbeheersysteem voor Vista College gebouwd met Python Flask en PostgreSQL.
 
 ## 🎯 Wat is dit?
